@@ -110,7 +110,7 @@ impl<'info> Take<'info> {
             mint: self.mint_a.to_account_info(),
             authority: self.escrow.to_account_info(),
         };
-        // Vault authority is the escrow PDA, so it signs via seeds, not a wallet signature.
+        // Vault authority is the escrow PDA, so it signs via seeds
         let seeds = &[
             ESCROW_SEED,
             self.maker.key.as_ref(),
@@ -121,9 +121,9 @@ impl<'info> Take<'info> {
 
         let cpi_context = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
 
-        // Entire vault balance of token A sent to taker
         transfer_checked(cpi_context, self.vault.amount, self.mint_a.decimals)?;
 
+        // Close the vault. Reclaimed rent goes to maker.
         let close_accounts = CloseAccount {
             account: self.vault.to_account_info(),
             destination: self.maker.to_account_info(),
@@ -133,7 +133,6 @@ impl<'info> Take<'info> {
         let cpi_close_context =
             CpiContext::new_with_signer(cpi_program, close_accounts, signer_seeds);
 
-        // Close the vault. Reclaimed rent goes to maker.
         close_account(cpi_close_context)
     }
 }

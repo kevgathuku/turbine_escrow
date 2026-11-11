@@ -27,8 +27,8 @@ pub mod turbine_escrow {
         ctx.accounts.withdraw_and_close_vault()
     }
 
-    //  #[instruction(discriminator = 2)]
-    // pub fn refund(ctx: Context<Refund>) -> Result<()> {
-    //     Ok(())
-    // }
+    #[instruction(discriminator = 2)]
+    pub fn refund(ctx: Context<Refund>) -> Result<()> {
+        ctx.accounts.refund_and_close_vault()
+    }
 }
