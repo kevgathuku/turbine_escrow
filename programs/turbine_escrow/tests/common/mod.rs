@@ -248,6 +248,28 @@ pub fn take_tx_with_mints(
     )
 }
 
+pub fn refund_tx(accounts: &MakeAccounts) -> Instruction {
+    refund_tx_with_maker(accounts, &accounts.maker.pubkey())
+}
+
+pub fn refund_tx_with_maker(accounts: &MakeAccounts, maker: &Pubkey) -> Instruction {
+    Instruction::new_with_bytes(
+        turbine_escrow::id(),
+        &turbine_escrow::instruction::Refund {}.data(),
+        accounts::Refund {
+            maker: *maker,
+            escrow: accounts.escrow,
+            mint_a: accounts.mint_a,
+            maker_ata_a: accounts.maker_ata_a,
+            vault: accounts.vault,
+            associated_token_program: ATA_PROGRAM_ID,
+            token_program: TOKEN_PROGRAM_ID,
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    )
+}
+
 pub fn token_amount(svm: &LiteSVM, address: &Pubkey) -> u64 {
     let acct = svm.get_account(address).unwrap();
     TokenAccount::unpack(&acct.data).unwrap().amount
