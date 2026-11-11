@@ -21,10 +21,11 @@ pub mod turbine_escrow {
         ctx.accounts.deposit(deposit)
     }
 
-    // #[instruction(discriminator = 1)]
-    // pub fn take(ctx: Context<Take>) -> Result<()> {
-    //     Ok(())
-    // }
+    #[instruction(discriminator = 1)]
+    pub fn take(ctx: Context<Take>) -> Result<()> {
+        ctx.accounts.transfer_to_maker()?;
+        ctx.accounts.withdraw_and_close_vault()
+    }
 
     //  #[instruction(discriminator = 2)]
     // pub fn refund(ctx: Context<Refund>) -> Result<()> {
