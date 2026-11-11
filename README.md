@@ -5,6 +5,7 @@
 1. Opens an escrow offering token A for token B (`make`)
 2. Accepts the escrow, swapping the tokens and closing both PDAs (`take`)
 3. Cancels the escrow, refunding token A and closing both PDAs (`refund`)
+4. Reprices an open escrow, changing only the receive amount (`update`)
 
 Each escrow is a PDA holding the swap terms (`seed`, `maker`, both mints, `receive`), with the offered tokens locked in a vault ATA owned by that PDA.
 
@@ -65,6 +66,16 @@ Verifies:
 - both PDAs gone, rents refunded.
 - failed attempts move nothing.
 - Rejects stranger attempting to cancel (`ConstraintSeeds`).
+
+### update
+
+Update the escrow: maker-only reprice that changes the receive amount without touching the vault.
+
+Verifies:
+
+- receive amount updated to the new value.
+- vault balance and maker balance untouched.
+- Rejects zero receive (`InvalidReceive`).
 
 ## Notes
 
