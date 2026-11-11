@@ -30,6 +30,8 @@ pub const TOKEN_UNIT: u64 = 1_000_000;
 pub const DEPOSIT: u64 = 100 * TOKEN_UNIT;
 pub const RECEIVE: u64 = 200 * TOKEN_UNIT;
 pub const MAKER_ATA_AMOUNT: u64 = 1_000 * TOKEN_UNIT;
+// Taker's starting balance of token B; must cover RECEIVE.
+pub const TAKER_B_FUNDING: u64 = 1_000 * TOKEN_UNIT;
 
 pub struct MakeAccounts {
     pub maker: Keypair,
@@ -44,6 +46,36 @@ pub struct MakeAccounts {
 pub struct MakeFixture {
     pub svm: LiteSVM,
     pub accounts: MakeAccounts,
+}
+
+// New mint with the maker as authority.
+pub fn create_mint(svm: &mut LiteSVM, maker: &Keypair) -> Pubkey {
+    let maker_pubkey = maker.pubkey();
+    CreateMint::new(svm, maker)
+        .decimals(DECIMALS)
+        .authority(&maker_pubkey)
+        .send()
+        .unwrap()
+}
+
+// New ATA for `owner` plus `amount` freshly minted into it.
+pub fn fund_ata(
+    svm: &mut LiteSVM,
+    payer: &Keypair,
+    mint_authority: &Keypair,
+    mint: &Pubkey,
+    owner: &Pubkey,
+    amount: u64,
+) -> Pubkey {
+    let ata = CreateAssociatedTokenAccount::new(svm, payer, mint)
+        .owner(owner)
+        .send()
+        .unwrap();
+    MintTo::new(svm, payer, mint, &ata, amount)
+        .owner(mint_authority)
+        .send()
+        .unwrap();
+    ata
 }
 
 pub fn setup() -> MakeFixture {
@@ -63,26 +95,11 @@ pub fn setup_with_funding(funding: u64) -> MakeFixture {
     svm.add_program(program_id, program_bytes).unwrap();
     svm.airdrop(&maker_pubkey, 10 * LAMPORTS_PER_SOL).unwrap();
 
-    // Real token setup through the bundled Token/ATA programs: two mints,
-    // the maker's funded ATA, and the escrow vault ATA (created empty).
-    let mint_a = CreateMint::new(&mut svm, &maker)
-        .decimals(DECIMALS)
-        .authority(&maker_pubkey)
-        .send()
-        .unwrap();
-    let mint_b = CreateMint::new(&mut svm, &maker)
-        .decimals(DECIMALS)
-        .authority(&maker_pubkey)
-        .send()
-        .unwrap();
+    let mint_a = create_mint(&mut svm, &maker);
+    let mint_b = create_mint(&mut svm, &maker);
 
-    let maker_ata_a = CreateAssociatedTokenAccount::new(&mut svm, &maker, &mint_a)
-        .send()
-        .unwrap();
-    // Fund the maker's ATA with token A
-    MintTo::new(&mut svm, &maker, &mint_a, &maker_ata_a, funding)
-        .send()
-        .unwrap();
+    // Fund the maker's ATA with token A.
+    let maker_ata_a = fund_ata(&mut svm, &maker, &maker, &mint_a, &maker_pubkey, funding);
 
     let (escrow, escrow_bump) = Pubkey::find_program_address(
         &[
@@ -142,6 +159,87 @@ pub fn make_tx_with_mints(
             maker_ata_a: accounts.maker_ata_a,
             escrow: accounts.escrow,
             vault: accounts.vault,
+            associated_token_program: ATA_PROGRAM_ID,
+            token_program: TOKEN_PROGRAM_ID,
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub struct TakeSetup {
+    pub taker: Keypair,
+    pub taker_ata_a: Pubkey,
+    pub taker_ata_b: Pubkey,
+    pub maker_ata_b: Pubkey,
+}
+
+// Fund the taker with token B. The receiving ATAs are derived only:
+// take creates them on demand via init_if_needed.
+pub fn setup_take(svm: &mut LiteSVM, accounts: &MakeAccounts) -> TakeSetup {
+    setup_take_with_funding(svm, accounts, TAKER_B_FUNDING)
+}
+
+pub fn setup_take_with_funding(
+    svm: &mut LiteSVM,
+    accounts: &MakeAccounts,
+    funding: u64,
+) -> TakeSetup {
+    let taker = Keypair::new();
+    let taker_pubkey = taker.pubkey();
+    svm.airdrop(&taker_pubkey, 2 * LAMPORTS_PER_SOL).unwrap();
+
+    let taker_ata_b = fund_ata(
+        svm,
+        &taker,
+        &accounts.maker,
+        &accounts.mint_b,
+        &taker_pubkey,
+        funding,
+    );
+
+    let taker_ata_a = get_associated_token_address_with_program_id(
+        &taker_pubkey,
+        &accounts.mint_a,
+        &TOKEN_PROGRAM_ID,
+    );
+    let maker_ata_b = get_associated_token_address_with_program_id(
+        &accounts.maker.pubkey(),
+        &accounts.mint_b,
+        &TOKEN_PROGRAM_ID,
+    );
+
+    TakeSetup {
+        taker,
+        taker_ata_a,
+        taker_ata_b,
+        maker_ata_b,
+    }
+}
+
+pub fn take_tx(accounts: &MakeAccounts, take: &TakeSetup) -> Instruction {
+    take_tx_with_mints(accounts, take, &accounts.mint_a, &accounts.mint_b)
+}
+
+pub fn take_tx_with_mints(
+    accounts: &MakeAccounts,
+    take: &TakeSetup,
+    mint_a: &Pubkey,
+    mint_b: &Pubkey,
+) -> Instruction {
+    Instruction::new_with_bytes(
+        turbine_escrow::id(),
+        &turbine_escrow::instruction::Take {}.data(),
+        accounts::Take {
+            taker: take.taker.pubkey(),
+            maker: accounts.maker.pubkey(),
+            escrow: accounts.escrow,
+            mint_a: *mint_a,
+            mint_b: *mint_b,
+            vault: accounts.vault,
+            taker_ata_a: take.taker_ata_a,
+            taker_ata_b: take.taker_ata_b,
+            maker_ata_b: take.maker_ata_b,
             associated_token_program: ATA_PROGRAM_ID,
             token_program: TOKEN_PROGRAM_ID,
             system_program: system_program::ID,
