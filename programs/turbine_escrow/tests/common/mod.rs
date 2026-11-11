@@ -17,7 +17,7 @@ use {
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
     spl_token_interface::{state::Account as TokenAccount, ID as TOKEN_PROGRAM_ID},
-    turbine_escrow::constants::ESCROW_SEED,
+    turbine_escrow::{accounts, constants::ESCROW_SEED},
 };
 
 pub const LAMPORTS_PER_SOL: u64 = 1_000_000_000;
@@ -31,8 +31,7 @@ pub const DEPOSIT: u64 = 100 * TOKEN_UNIT;
 pub const RECEIVE: u64 = 200 * TOKEN_UNIT;
 pub const MAKER_ATA_AMOUNT: u64 = 1_000 * TOKEN_UNIT;
 
-pub struct MakeFixture {
-    pub svm: LiteSVM,
+pub struct MakeAccounts {
     pub maker: Keypair,
     pub mint_a: Pubkey,
     pub mint_b: Pubkey,
@@ -40,6 +39,11 @@ pub struct MakeFixture {
     pub escrow: Pubkey,
     pub escrow_bump: u8,
     pub vault: Pubkey,
+}
+
+pub struct MakeFixture {
+    pub svm: LiteSVM,
+    pub accounts: MakeAccounts,
 }
 
 pub fn setup() -> MakeFixture {
@@ -88,27 +92,19 @@ pub fn setup() -> MakeFixture {
 
     MakeFixture {
         svm,
-        maker,
-        mint_a,
-        mint_b,
-        maker_ata_a,
-        escrow,
-        escrow_bump,
-        vault,
+        accounts: MakeAccounts {
+            maker,
+            mint_a,
+            mint_b,
+            maker_ata_a,
+            escrow,
+            escrow_bump,
+            vault,
+        },
     }
 }
 
-pub fn make_tx(
-    maker: &Pubkey,
-    mint_a: &Pubkey,
-    mint_b: &Pubkey,
-    maker_ata_a: &Pubkey,
-    escrow: &Pubkey,
-    vault: &Pubkey,
-    seed: u64,
-    deposit: u64,
-    receive: u64,
-) -> Instruction {
+pub fn make_tx(accounts: &MakeAccounts, seed: u64, deposit: u64, receive: u64) -> Instruction {
     Instruction::new_with_bytes(
         turbine_escrow::id(),
         &turbine_escrow::instruction::Make {
@@ -117,13 +113,13 @@ pub fn make_tx(
             receive,
         }
         .data(),
-        turbine_escrow::accounts::Make {
-            maker: *maker,
-            mint_a: *mint_a,
-            mint_b: *mint_b,
-            maker_ata_a: *maker_ata_a,
-            escrow: *escrow,
-            vault: *vault,
+        accounts::Make {
+            maker: accounts.maker.pubkey(),
+            mint_a: accounts.mint_a,
+            mint_b: accounts.mint_b,
+            maker_ata_a: accounts.maker_ata_a,
+            escrow: accounts.escrow,
+            vault: accounts.vault,
             associated_token_program: ATA_PROGRAM_ID,
             token_program: TOKEN_PROGRAM_ID,
             system_program: system_program::ID,
