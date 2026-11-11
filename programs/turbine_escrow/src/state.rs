@@ -15,7 +15,7 @@ pub struct Escrow {
     pub mint_b: Pubkey,
     // How much of token B the maker wants
     pub receive: u64,
-    // Cached bump byte
+    // Cached bump byte. filled by bumps.escrow
     pub bump: u8,
     // pub expiration: i64
 }

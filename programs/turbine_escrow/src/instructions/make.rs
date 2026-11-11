@@ -1,13 +1,13 @@
 use anchor_lang::prelude::*;
 
-use crate::{Escrow, ESCROW_SEED};
+use crate::{error::EscrowError, Escrow, ESCROW_SEED};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
 #[derive(Accounts)]
-#[instruction(seed: u64)]
+#[instruction(seed: u64, deposit: u64, receive: u64)]
 pub struct Make<'info> {
     #[account(mut)]
     pub maker: Signer<'info>,
@@ -35,7 +35,9 @@ pub struct Make<'info> {
         payer = maker,
         seeds = [ESCROW_SEED, maker.key().as_ref(), seed.to_le_bytes().as_ref()],
         space = Escrow::DISCRIMINATOR.len() + Escrow::INIT_SPACE,
-        bump
+        bump,
+        constraint = receive > 0 @ EscrowError::InvalidAmount,
+        constraint = deposit > 0 @ EscrowError::InvalidAmount
     )]
     pub escrow: Account<'info, Escrow>,
 
@@ -79,6 +81,8 @@ impl<'info> Make<'info> {
 
         let cpi_ctx = CpiContext::new(self.token_program.key(), tranfer_accounts);
 
+        // CPI: transfer deposit of mint_a from maker_ata_a -> vault
+        // authority / signer = maker
         transfer_checked(cpi_ctx, deposit, self.mint_a.decimals)
     }
 }
