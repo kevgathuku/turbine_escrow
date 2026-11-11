@@ -1,6 +1,6 @@
 mod common;
 
-use {anchor_lang::error::ErrorCode, common::*, solana_keypair::Keypair, solana_signer::Signer};
+use {anchor_lang::error::ErrorCode, common::*, solana_signer::Signer};
 
 #[test]
 fn test_refund_success() {

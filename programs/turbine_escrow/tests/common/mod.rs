@@ -270,6 +270,18 @@ pub fn refund_tx_with_maker(accounts: &MakeAccounts, maker: &Pubkey) -> Instruct
     )
 }
 
+pub fn update_tx(accounts: &MakeAccounts, receive: u64) -> Instruction {
+    Instruction::new_with_bytes(
+        turbine_escrow::id(),
+        &turbine_escrow::instruction::Update { receive }.data(),
+        accounts::Update {
+            maker: accounts.maker.pubkey(),
+            escrow: accounts.escrow,
+        }
+        .to_account_metas(None),
+    )
+}
+
 pub fn token_amount(svm: &LiteSVM, address: &Pubkey) -> u64 {
     let acct = svm.get_account(address).unwrap();
     TokenAccount::unpack(&acct.data).unwrap().amount
