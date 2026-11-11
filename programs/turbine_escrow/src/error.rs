@@ -12,6 +12,8 @@ pub enum EscrowError {
     InvalidMintA,
     #[msg("Invalid mint B")]
     InvalidMintB,
+    #[msg("Mint A and mint B must be different")]
+    DuplicateMint,
     #[msg("Insufficient token balance to complete the swap")]
     InsufficientBalance,
     // #[msg("The escrow has expired")]

@@ -77,3 +77,26 @@ fn test_make_insufficient_token_a_amount_fails() {
         "expected InsufficientBalance, got: {err_str}"
     );
 }
+
+#[test]
+fn test_make_duplicate_mint_fails() {
+    let MakeFixture { mut svm, accounts } = setup();
+
+    // Same mint on both sides of the swap.
+    let ix = make_tx_with_mints(
+        &accounts,
+        &accounts.mint_a,
+        &accounts.mint_a,
+        SEED,
+        DEPOSIT,
+        RECEIVE,
+    );
+    let err = send(&mut svm, &[&accounts.maker], ix).unwrap_err();
+
+    let expected = EscrowError::DuplicateMint.to_string();
+    let err_str = format!("{err:?}");
+    assert!(
+        err_str.contains(&expected),
+        "expected DuplicateMint, got: {err_str}"
+    );
+}

@@ -109,6 +109,24 @@ pub fn setup_with_funding(funding: u64) -> MakeFixture {
 }
 
 pub fn make_tx(accounts: &MakeAccounts, seed: u64, deposit: u64, receive: u64) -> Instruction {
+    make_tx_with_mints(
+        accounts,
+        &accounts.mint_a,
+        &accounts.mint_b,
+        seed,
+        deposit,
+        receive,
+    )
+}
+
+pub fn make_tx_with_mints(
+    accounts: &MakeAccounts,
+    mint_a: &Pubkey,
+    mint_b: &Pubkey,
+    seed: u64,
+    deposit: u64,
+    receive: u64,
+) -> Instruction {
     Instruction::new_with_bytes(
         turbine_escrow::id(),
         &turbine_escrow::instruction::Make {
@@ -119,8 +137,8 @@ pub fn make_tx(accounts: &MakeAccounts, seed: u64, deposit: u64, receive: u64) -
         .data(),
         accounts::Make {
             maker: accounts.maker.pubkey(),
-            mint_a: accounts.mint_a,
-            mint_b: accounts.mint_b,
+            mint_a: *mint_a,
+            mint_b: *mint_b,
             maker_ata_a: accounts.maker_ata_a,
             escrow: accounts.escrow,
             vault: accounts.vault,

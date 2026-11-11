@@ -38,7 +38,8 @@ pub struct Make<'info> {
         space = Escrow::DISCRIMINATOR.len() + Escrow::INIT_SPACE,
         bump,
         constraint = receive > 0 @ EscrowError::InvalidReceive,
-        constraint = deposit > 0 @ EscrowError::InvalidDeposit
+        constraint = deposit > 0 @ EscrowError::InvalidDeposit,
+        constraint = mint_a.key() != mint_b.key() @ EscrowError::DuplicateMint
     )]
     pub escrow: Account<'info, Escrow>,
 
