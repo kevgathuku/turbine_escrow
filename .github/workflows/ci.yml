@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  ANCHOR_VERSION: "1.2.2"
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: "1.91.0" # must match rust-toolchain.toml
+          # Version comes from rust-toolchain.toml (1.91.0).
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Install Anchor CLI
+        # Second toolchain: anchor-cli 1.2.x needs solana-sbpf@0.23.0, which
+        # won't compile on the pinned 1.91.0, so only this step uses stable.
+        run: |
+          rustup toolchain install stable --profile minimal
+          cargo +stable install --locked anchor-cli --version "$ANCHOR_VERSION"
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Build program
+        run: anchor build --ignore-keys
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace
