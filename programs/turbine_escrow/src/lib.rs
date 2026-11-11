@@ -15,11 +15,19 @@ declare_id!("EedMZJZX9UJTqRRfEe1QowaJTGz81ZFA4zCVFbsy4dWy");
 pub mod turbine_escrow {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        crate::instructions::initialize::handle_initialize(ctx)
+    #[instruction(discriminator = 0)]
+    pub fn make(ctx: Context<Make>, seed: u64, deposit: u64, receive: u64) -> Result<()> {
+        ctx.accounts.init_escrow(seed, receive, &ctx.bumps)?;
+        ctx.accounts.deposit(deposit)
     }
 
-    pub fn increment(ctx: Context<Increment>) -> Result<()> {
-        crate::instructions::increment::handle_increment(ctx)
-    }
+    // #[instruction(discriminator = 1)]
+    // pub fn take(ctx: Context<Take>) -> Result<()> {
+    //     Ok(())
+    // }
+
+    //  #[instruction(discriminator = 2)]
+    // pub fn refund(ctx: Context<Refund>) -> Result<()> {
+    //     Ok(())
+    // }
 }
