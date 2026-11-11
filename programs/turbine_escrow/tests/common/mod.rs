@@ -47,6 +47,10 @@ pub struct MakeFixture {
 }
 
 pub fn setup() -> MakeFixture {
+    setup_with_funding(MAKER_ATA_AMOUNT)
+}
+
+pub fn setup_with_funding(funding: u64) -> MakeFixture {
     let program_id = turbine_escrow::id();
     let maker = Keypair::new();
     let maker_pubkey = maker.pubkey();
@@ -76,7 +80,7 @@ pub fn setup() -> MakeFixture {
         .send()
         .unwrap();
     // Fund the maker's ATA with token A
-    MintTo::new(&mut svm, &maker, &mint_a, &maker_ata_a, MAKER_ATA_AMOUNT)
+    MintTo::new(&mut svm, &maker, &mint_a, &maker_ata_a, funding)
         .send()
         .unwrap();
 

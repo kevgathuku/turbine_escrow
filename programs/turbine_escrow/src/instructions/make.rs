@@ -26,7 +26,8 @@ pub struct Make<'info> {
         mut,
         associated_token::mint = mint_a,
         associated_token::authority = maker,
-        associated_token::token_program = token_program
+        associated_token::token_program = token_program,
+        constraint = maker_ata_a.amount >= deposit @ EscrowError::InsufficientBalance
     )]
     pub maker_ata_a: InterfaceAccount<'info, TokenAccount>,
 
@@ -36,8 +37,8 @@ pub struct Make<'info> {
         seeds = [ESCROW_SEED, maker.key().as_ref(), seed.to_le_bytes().as_ref()],
         space = Escrow::DISCRIMINATOR.len() + Escrow::INIT_SPACE,
         bump,
-        constraint = receive > 0 @ EscrowError::InvalidAmount,
-        constraint = deposit > 0 @ EscrowError::InvalidAmount
+        constraint = receive > 0 @ EscrowError::InvalidReceive,
+        constraint = deposit > 0 @ EscrowError::InvalidDeposit
     )]
     pub escrow: Account<'info, Escrow>,
 
@@ -72,14 +73,14 @@ impl<'info> Make<'info> {
 
     // Deposit tokens from maker to vault
     pub fn deposit(&mut self, deposit: u64) -> Result<()> {
-        let tranfer_accounts = TransferChecked {
+        let transfer_accounts = TransferChecked {
             from: self.maker_ata_a.to_account_info(),
             mint: self.mint_a.to_account_info(),
             to: self.vault.to_account_info(),
             authority: self.maker.to_account_info(),
         };
 
-        let cpi_ctx = CpiContext::new(self.token_program.key(), tranfer_accounts);
+        let cpi_ctx = CpiContext::new(self.token_program.key(), transfer_accounts);
 
         // CPI: transfer deposit of mint_a from maker_ata_a -> vault
         // authority / signer = maker

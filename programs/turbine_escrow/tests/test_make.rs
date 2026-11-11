@@ -39,11 +39,11 @@ fn test_make_zero_deposit_fails() {
     let ix = make_tx(&accounts, SEED, 0, RECEIVE);
     let err = send(&mut svm, &[&accounts.maker], ix).unwrap_err();
 
-    let expected = EscrowError::InvalidAmount.to_string();
+    let expected = EscrowError::InvalidDeposit.to_string();
     let err_str = format!("{err:?}");
     assert!(
         err_str.contains(&expected),
-        "expected InvalidAmount, got: {err_str}"
+        "expected InvalidDeposit, got: {err_str}"
     );
 }
 
@@ -54,10 +54,26 @@ fn test_make_zero_receive_fails() {
     let ix = make_tx(&accounts, SEED, DEPOSIT, 0);
     let err = send(&mut svm, &[&accounts.maker], ix).unwrap_err();
 
-    let expected = EscrowError::InvalidAmount.to_string();
+    let expected = EscrowError::InvalidReceive.to_string();
     let err_str = format!("{err:?}");
     assert!(
         err_str.contains(&expected),
-        "expected InvalidAmount, got: {err_str}"
+        "expected InvalidReceive, got: {err_str}"
+    );
+}
+
+#[test]
+fn test_make_insufficient_token_a_amount_fails() {
+    // Fund the maker with a less amount than the deposit
+    let MakeFixture { mut svm, accounts } = setup_with_funding(DEPOSIT - 1);
+
+    let ix = make_tx(&accounts, SEED, DEPOSIT, RECEIVE);
+    let err = send(&mut svm, &[&accounts.maker], ix).unwrap_err();
+
+    let expected = EscrowError::InsufficientBalance.to_string();
+    let err_str = format!("{err:?}");
+    assert!(
+        err_str.contains(&expected),
+        "expected InsufficientBalance, got: {err_str}"
     );
 }
