@@ -2,8 +2,7 @@
 name = "turbine_escrow"
 version = "0.1.0"
 description = "Created with Anchor"
-edition.workspace = true
-rust-version.workspace = true
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
@@ -22,18 +21,17 @@ custom-panic = []
 
 [dependencies]
 anchor-lang = { version = "1.2.2", features = ["init-if-needed"] }
-anchor-spl = "1.0.0"
+anchor-spl = "1.2.2"
 
 [dev-dependencies]
-# Cargo.lock pins LiteSVM's Rust-1.89-compatible dependency graph.
-litesvm = "0.15.0"
+litesvm = "0.16.0"
+litesvm-token = "0.16.0"
 solana-message = "4"
 solana-transaction = "4"
 solana-signer = "3"
 solana-keypair = "3"
-solana-program-pack = "3.1.0"
-solana-program-option = "3.1.0"
-litesvm-token = "0.15.0"
+solana-pubkey = "3"
+solana-program-pack = "3"
 
 
 [lints.rust]
