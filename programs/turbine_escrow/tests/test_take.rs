@@ -2,8 +2,7 @@ mod common;
 
 use {
     anchor_spl::associated_token::get_associated_token_address_with_program_id, common::*,
-    solana_signer::Signer, spl_token_interface::ID as TOKEN_PROGRAM_ID,
-    turbine_escrow::error::EscrowError,
+    solana_signer::Signer, turbine_escrow::error::EscrowError,
 };
 
 #[test]

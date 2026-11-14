@@ -7,8 +7,10 @@ use {
         InstructionData, ToAccountMetas,
     },
     anchor_spl::associated_token::{
-        get_associated_token_address_with_program_id, ID as ATA_PROGRAM_ID,
+        get_associated_token_address, get_associated_token_address_with_program_id,
+        ID as ATA_PROGRAM_ID,
     },
+    anchor_spl::token::spl_token::state::Account as TokenAccount,
     litesvm::LiteSVM,
     litesvm_token::{CreateAssociatedTokenAccount, CreateMint, MintTo},
     solana_keypair::Keypair,
@@ -16,9 +18,10 @@ use {
     solana_program_pack::Pack,
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
-    spl_token_interface::{state::Account as TokenAccount, ID as TOKEN_PROGRAM_ID},
     turbine_escrow::{accounts, constants::ESCROW_SEED},
 };
+
+pub use litesvm_token::spl_token::ID as TOKEN_PROGRAM_ID;
 
 pub const LAMPORTS_PER_SOL: u64 = 1_000_000_000;
 
@@ -109,7 +112,7 @@ pub fn setup_with_funding(funding: u64) -> MakeFixture {
         ],
         &program_id,
     );
-    let vault = get_associated_token_address_with_program_id(&escrow, &mint_a, &TOKEN_PROGRAM_ID);
+    let vault = get_associated_token_address(&escrow, &mint_a);
 
     MakeFixture {
         svm,

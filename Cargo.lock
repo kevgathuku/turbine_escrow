@@ -4432,7 +4432,6 @@ dependencies = [
  "solana-program-pack",
  "solana-signer",
  "solana-transaction",
- "spl-token-interface 3.0.0",
 ]
 
 [[package]]
